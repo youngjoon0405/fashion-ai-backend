@@ -1,11 +1,10 @@
-# app/api/upload.py
 import os
 import httpx
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File
 from app.services.s3 import upload_fileobj
 from app.services.analysis_results import save_ai_result
-from app.services.chat_messages import save_message  # 수정된 서비스
+from app.services.chat_store import save_text_message   # ← 이 이름이 실제 있는 함수
 
 router = APIRouter()
 
@@ -23,14 +22,7 @@ async def upload_image(
     # AI 서버 호출
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(
-                AI_SERVER_URL,
-                json={
-                    "image_url": s3_url,
-                    "uid": uid,
-                    "chat_id": chat_id,
-                },
-            )
+            resp = await client.post(AI_SERVER_URL, json={"image_url": s3_url})
         resp.raise_for_status()
         ai_data = resp.json()
     except Exception as e:
@@ -40,7 +32,7 @@ async def upload_image(
             "error": str(e),
         }
 
-    # 분석 결과 테이블에도 저장 (네가 따로 쓰는 용도)
+    # 1) 분석 결과 테이블에 저장
     save_ai_result(
         uid=uid,
         image_url=s3_url,
@@ -48,13 +40,12 @@ async def upload_image(
         chat_id=chat_id,
     )
 
-    # 👇 대화 타임라인에도 저장 (이제는 /users/{uid}/chats/{chat_id}/messages 밑으로)
-    save_message(
+    # 2) 채팅 로그에도 “이미지 올림” 기록 남기기
+    # chat_store는 text만 받으니까, 이미지 url을 텍스트로 그냥 넣자
+    save_text_message(
         uid=uid,
         chat_id=chat_id,
-        sender=uid,
-        image_url=s3_url,
-        ai_result=ai_data,
+        text=f"[image] {s3_url}",
     )
 
     return {
