@@ -1,0 +1,11 @@
+
+fastapi
+uvicorn[standard]
+python-multipart
+boto3
+google-cloud-firestore
+firebase-admin
+pydantic
+chromadb
+python-dotenv
+httpx
