@@ -16,15 +16,19 @@ session = boto3.session.Session(
 
 s3 = session.client("s3")
 
-def upload_fileobj(fileobj, key: str, content_type: str = "image/jpeg"):
+def upload_to_s3(fileobj, key: str, content_type: str = "image/jpeg"):
+    """
+    기존 upload_fileobj 기능을 upload_to_s3 이름으로 그대로 사용
+    """
     s3.upload_fileobj(
         fileobj,
         S3_BUCKET,
         key,
         ExtraArgs={
             "ContentType": content_type,
-           
+            "ACL": "public-read"
         },
     )
-    url = f"https://{S3_BUCKET}.s3.amazonaws.com/{key}"
+
+    url = f"https://{S3_BUCKET}.s3.{AWS_REGION}.amazonaws.com/{key}"
     return url
