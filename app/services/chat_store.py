@@ -1,45 +1,25 @@
-# app/services/chat_store.py
+from google.cloud import firestore
 from datetime import datetime
-from app.core.firebase import db
 
-COLLECTION = "chat_messages"
+db = firestore.Client()
 
-def save_text_message(uid: str, chat_id: str, text: str, sender: str = None):
-    doc = {
-        "uid": uid,
-        "chat_id": chat_id,
-        "sender": sender or uid,
+def save_chat_message(user_id: str, sender: str, message_type: str, text: str = None, 
+                      image_url: str = None, ai_result: dict = None):
+
+    doc_ref = (
+        db.collection("chat_messages")
+          .document(user_id)
+          .collection("messages")
+          .document()
+    )
+
+    doc_ref.set({
+        "uid": user_id,
+        "sender": sender,
+        "type": message_type,
         "text": text,
-        "type": "text",
-        "image_url": None,
-        "ai_result": None,
-        "created_at": datetime.utcnow().isoformat(),
-    }
-    db.collection(COLLECTION).add(doc)
-
-def save_image_message(uid: str, chat_id: str, image_url: str, ai_result: dict = None, sender: str = None):
-    doc = {
-        "uid": uid,
-        "chat_id": chat_id,
-        "sender": sender or uid,
-        "text": "",
-        "type": "image",
         "image_url": image_url,
         "ai_result": ai_result,
         "created_at": datetime.utcnow().isoformat(),
-    }
-    db.collection(COLLECTION).add(doc)
-
-def get_chat_history(uid: str, chat_id: str):
-    q = (
-        db.collection(COLLECTION)
-        .where("chat_id", "==", chat_id)
-        .order_by("created_at")
-    )
-    docs = q.stream()
-    msgs = []
-    for d in docs:
-        data = d.to_dict()
-        data["id"] = d.id
-        msgs.append(data)
-    return {"chat_id": chat_id, "messages": msgs}
+        "chat_id": user_id
+    })

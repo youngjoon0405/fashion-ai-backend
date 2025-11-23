@@ -1,13 +1,20 @@
-# app/services/analysis_results.py
+from google.cloud import firestore
 from datetime import datetime
-from app.core.firebase import db
 
-def save_ai_result(uid: str, image_url: str, ai_result: dict, chat_id: str = "room_1"):
-    doc = {
-        "uid": uid,
-        "chat_id": chat_id,
+db = firestore.Client()
+
+def save_analysis_result(user_id: str, image_url: str, ai_result: dict):
+
+    doc_ref = (
+        db.collection("analysis_results")
+          .document(user_id)
+          .collection("results")
+          .document()
+    )
+
+    doc_ref.set({
+        "uid": user_id,
         "image_url": image_url,
-        "ai_result": ai_result,   # ← AI가 준 JSON 그대로 저장
+        "ai_result": ai_result,
         "created_at": datetime.utcnow().isoformat(),
-    }
-    db.collection("analysis_results").add(doc)
+    })
