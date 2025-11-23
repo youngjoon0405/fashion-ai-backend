@@ -1,15 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, Form
 from app.services.s3 import upload_to_s3
 from app.services.chat_store import save_chat_message
-from app.services.analysis_results import (
-    save_global_analysis_result,
-    save_user_analysis_result
-)
+from app.services.analysis_results import save_analysis_result
 import httpx
 import os
 
 router = APIRouter()
-AI_URL = os.getenv("AI_SERVER_URL", "http://127.0.0.1:9000/analyze")
+AI_URL = os.getenv("AI_SERVER_URL","http://127.0.0.1:9000/analyze")
 
 
 @router.post("/image")
@@ -43,15 +40,8 @@ async def upload_image(
         ai_result=ai_result
     )
 
-    # 5-1) 사용자별 분석결과 저장
-    save_user_analysis_result(
-        user_id=user_id,
-        image_url=image_url,
-        ai_result=ai_result
-    )
-
-    # 5-2) 전체 분석결과 저장
-    save_global_analysis_result(
+    # 5) 분석결과 전용 컬렉션에도 저장
+    save_analysis_result(
         user_id=user_id,
         image_url=image_url,
         ai_result=ai_result
